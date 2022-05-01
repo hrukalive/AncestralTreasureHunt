@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "DungeonGenerationEngine.h"
 #include "TilemapGenerator.generated.h"
 
 UCLASS(Blueprintable)
@@ -26,8 +27,8 @@ public:
 	UFUNCTION(BlueprintCallable)
 		void GenerateTilemap(
 			UPARAM(DisplayName = "Seed") int32 Seed,
-			UPARAM(DisplayName = "Estimated Width") int Width,
-			UPARAM(DisplayName = "Estimated Height") int Height);
+			UPARAM(DisplayName = "Map Width") int Width,
+			UPARAM(DisplayName = "Map Height") int Height);
 
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
@@ -38,4 +39,7 @@ public:
 		int MapHeight;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 		bool bGenerated;
+	
+private:
+	DungeonGenerationEngine engine;
 };

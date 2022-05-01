@@ -33,31 +33,42 @@ void ATilemapGenerator::GenerateTilemap(int32 Seed, int Width, int Height)
 {
 	bGenerated = false;
 	
-	if (Width <= 16 || Height <= 16)
-	{
-		return;
-	}
-	
-	FRandomStream Stream(Seed);
+	auto boxes = engine.randBox(42, 100, 0.9, false, 1, 4, 4, false, 8, 12, 3, 0.65);
+	boxes = engine.separateBox(boxes);
+	boxes = engine.centerAndCropBox(boxes, Width, Height);
+	auto ret = engine.randSelect(boxes, 12, false);
+	boxes = ret.first;
+	auto rooms = ret.second;
+	auto edges = engine.triangulate(rooms);
+	auto mst_edges = engine.mst(edges, 12);
+	mst_edges = engine.addSomeEdgesBack(42, edges, mst_edges, 0.1);
+	auto lines = engine.lineConnect(42, rooms, mst_edges, 3, false, 0.5);
+	auto ret2 = engine.selectCorridors(boxes, lines, 12);
+	boxes = ret2.first;
+	auto corridors = ret.second;
+	auto tiles = engine.tiling(rooms, corridors, lines, Width, Height);
+
+	Tilemap.Reset();
+	for (int v : tiles)
+		Tilemap.Add(v);
+
+	bGenerated = true;
 	MapWidth = Width;
 	MapHeight = Height;
+	UE_LOG(LogActor, Warning, TEXT("Tilemap generated"));
 
-	Tilemap.Reset(MapWidth * MapHeight);
+    FString tileStr;
+    tileStr += "------------\n";
 	for (int32 i = 0; i < MapHeight; i++)
 	{
 		for (int32 j = 0; j < MapWidth; j++)
 		{
-			Tilemap.Add(0);
-			//Tilemap.Add(Stream.FRandRange(0.f, 10.f) < 1.f ? 1 : 0);
+			if (Tilemap[i * MapWidth + j] == 0)
+				tileStr += ".";
+			else
+				tileStr += FString::FromInt(Tilemap[i * MapWidth + j]);
 		}
+		tileStr += "\n";
 	}
-	for (int32 i = MapHeight / 2 - 5; i < MapHeight / 2 + 5; i++)
-	{
-		for (int32 j = MapWidth / 2 - 3; j < MapWidth / 2 + 3; j++)
-		{
-			Tilemap[i * MapWidth + j] = 1;
-		}
-	}
-	bGenerated = true;
-	UE_LOG(LogActor, Warning, TEXT("Tilemap generated"));
+    UE_LOG(LogActor, Warning, TEXT("%s"), *tileStr);
 }
