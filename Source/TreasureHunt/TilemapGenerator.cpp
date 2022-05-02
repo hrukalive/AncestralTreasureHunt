@@ -29,23 +29,48 @@ void ATilemapGenerator::Tick(float DeltaTime)
 
 }
 
-void ATilemapGenerator::GenerateTilemap(int32 Seed, int Width, int Height)
+void ATilemapGenerator::GenerateTilemap(
+	int32 Seed, int Width, int Height,
+	int NumBox, float SmallBoxProb, float SmallBoxRatioLimit, float LargeBoxRatioLimit,
+	float LargeBoxRadiusMultiplier, bool SmallBoxUseNormalDist, float SmallBoxParamA, float SmallBoxParamB,
+	bool LargeBoxUseNormalDist, float LargeBoxParamA, float LargeBoxParamB,
+	int NumRooms, bool AllowTouching, float AddBackProb, int OverlapPadding,
+	bool AddBothDirection, float FirstHorizontalProb, int MaxRoomSize
+)
 {
 	bGenerated = false;
 	
-	auto boxes = engine.randBox(42, 100, 0.9, false, 1, 4, 4, false, 8, 12, 3, 0.65);
+	if (Width < 0 || Height < 0)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Invalid map size"));
+		return;
+	}
+	auto boxes = engine.randBox(
+		Seed, NumBox, SmallBoxProb, SmallBoxUseNormalDist, SmallBoxParamA, SmallBoxParamB, SmallBoxRatioLimit,
+		LargeBoxUseNormalDist, LargeBoxParamA, LargeBoxParamB, LargeBoxRatioLimit, LargeBoxRadiusMultiplier
+	);
 	boxes = engine.separateBox(boxes);
+	if (boxes.size() == 0)
+		return;
 	boxes = engine.centerAndCropBox(boxes, Width, Height);
-	auto ret = engine.randSelect(boxes, 12, false);
+	if (boxes.size() == 0)
+		return;
+	auto ret = engine.randSelect(boxes, NumRooms, AllowTouching);
 	boxes = ret.first;
-	auto rooms = ret.second;
+	DungeonGenerationEngine::RoomBoxVec rooms = ret.second;
+	if (rooms.size() == 0)
+		return;
 	auto edges = engine.triangulate(rooms);
-	auto mst_edges = engine.mst(edges, 12);
-	mst_edges = engine.addSomeEdgesBack(42, edges, mst_edges, 0.1);
-	auto lines = engine.lineConnect(42, rooms, mst_edges, 3, false, 0.5);
-	auto ret2 = engine.selectCorridors(boxes, lines, 12);
+	if (edges.size() == 0)
+		return;
+	auto mst_edges = engine.mst(edges, NumRooms);
+	if (mst_edges.size() == 0)
+		return;
+	mst_edges = engine.addSomeEdgesBack(Seed, edges, mst_edges, AddBackProb);
+	auto lines = engine.lineConnect(Seed, rooms, mst_edges, OverlapPadding, AddBothDirection, FirstHorizontalProb);
+	auto ret2 = engine.selectCorridors(boxes, lines, MaxRoomSize);
 	boxes = ret2.first;
-	auto corridors = ret.second;
+	DungeonGenerationEngine::RoomBoxVec corridors = ret.second;
 	auto tiles = engine.tiling(rooms, corridors, lines, Width, Height);
 
 	Tilemap.Reset();
