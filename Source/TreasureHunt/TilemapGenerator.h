@@ -30,6 +30,7 @@ public:
 			UPARAM(DisplayName = "Map Width") int Width = 64,
 			UPARAM(DisplayName = "Map Height") int Height = 64,
 			UPARAM(DisplayName = "Num Rand Boxes") int NumBox = 100,
+			UPARAM(DisplayName = "Max Iterations for Rand Boxes") int MaxIteration = 100000,
 			UPARAM(DisplayName = "Small Box Probability") float SmallBoxProb = 0.9f,
 			UPARAM(DisplayName = "Small Box Ratio Limit") float SmallBoxRatioLimit = 4.0f,
 			UPARAM(DisplayName = "Large Box Ratio Limit") float LargeBoxRatioLimit = 3.0f,

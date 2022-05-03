@@ -177,7 +177,7 @@ constexpr bool DungeonGenerationEngine::CustomTupleComp::operator()(const std::t
 
 
 DungeonGenerationEngine::RoomBoxVec DungeonGenerationEngine::randBox(unsigned int seed,
-    unsigned int numBox, float smallBoxProb,
+    unsigned int numBox, unsigned int maxIteration, float smallBoxProb,
     bool smallBoxUseNormalDist, float smallBoxDistParamA, float smallBoxDistParamB, float smallBoxRatioLimit,
     bool largeBoxUseNormalDist, float largeBoxDistParamA, float largeBoxDistParamB, float largeBoxRatioLimit,
     float largeBoxRadiusMultiplier)
@@ -196,7 +196,7 @@ DungeonGenerationEngine::RoomBoxVec DungeonGenerationEngine::randBox(unsigned in
     std::set<RoomBox, RoomBoxComp> boxSet;
 
     int i = 0;
-    while (i < (int)numBox)
+    while (i < (int)numBox && i < (int)maxIteration)
     {
         double t = 2 * M_PI * pos_dist(generator);
         double u = pos_dist(generator) + pos_dist(generator);

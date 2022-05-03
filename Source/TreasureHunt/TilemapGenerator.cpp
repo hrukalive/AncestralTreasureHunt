@@ -31,7 +31,7 @@ void ATilemapGenerator::Tick(float DeltaTime)
 
 void ATilemapGenerator::GenerateTilemap(
 	int32 Seed, int Width, int Height,
-	int NumBox, float SmallBoxProb, float SmallBoxRatioLimit, float LargeBoxRatioLimit,
+	int NumBox, int MaxIteration, float SmallBoxProb, float SmallBoxRatioLimit, float LargeBoxRatioLimit,
 	float LargeBoxRadiusMultiplier, bool SmallBoxUseNormalDist, float SmallBoxParamA, float SmallBoxParamB,
 	bool LargeBoxUseNormalDist, float LargeBoxParamA, float LargeBoxParamB,
 	int NumRooms, bool AllowTouching, float AddBackProb, int OverlapPadding,
@@ -46,7 +46,7 @@ void ATilemapGenerator::GenerateTilemap(
 		return;
 	}
 	auto boxes = engine.randBox(
-		Seed, NumBox, SmallBoxProb, SmallBoxUseNormalDist, SmallBoxParamA, SmallBoxParamB, SmallBoxRatioLimit,
+		Seed, NumBox, MaxIteration, SmallBoxProb, SmallBoxUseNormalDist, SmallBoxParamA, SmallBoxParamB, SmallBoxRatioLimit,
 		LargeBoxUseNormalDist, LargeBoxParamA, LargeBoxParamB, LargeBoxRatioLimit, LargeBoxRadiusMultiplier
 	);
 	boxes = engine.separateBox(boxes);

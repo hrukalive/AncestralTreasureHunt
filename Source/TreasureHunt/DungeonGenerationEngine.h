@@ -58,7 +58,7 @@ public:
     using LineSet = std::set<std::tuple<double, double, double, double>>;
 
     RoomBoxVec randBox(
-        unsigned int seed, unsigned int numBox, float smallBoxProb,
+        unsigned int seed, unsigned int numBox, unsigned int maxIteration, float smallBoxProb,
         bool smallBoxUseNormalDist, float smallBoxDistParamA, float smallBoxDistParamB, float smallBoxRatioLimit,
         bool largeBoxUseNormalDist, float largeBoxDistParamA, float largeBoxDistParamB, float largeBoxRatioLimit,
         float largeBoxRadiusMultiplier);
