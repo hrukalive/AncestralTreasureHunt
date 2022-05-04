@@ -30,7 +30,7 @@ void ATilemapGenerator::Tick(float DeltaTime)
 }
 
 void ATilemapGenerator::GenerateTilemap(
-	int32 Seed, int Width, int Height,
+	int32 Seed, int Width, int Height, bool UseRectRegion, float RadiusX, float RadiusY,
 	int NumBox, int MaxIteration, float SmallBoxProb, float SmallBoxRatioLimit, float LargeBoxRatioLimit,
 	float LargeBoxRadiusMultiplier, bool SmallBoxUseNormalDist, float SmallBoxParamA, float SmallBoxParamB,
 	bool LargeBoxUseNormalDist, float LargeBoxParamA, float LargeBoxParamB,
@@ -46,7 +46,8 @@ void ATilemapGenerator::GenerateTilemap(
 		return;
 	}
 	auto boxes = engine.randBox(
-		Seed, NumBox, MaxIteration, SmallBoxProb, SmallBoxUseNormalDist, SmallBoxParamA, SmallBoxParamB, SmallBoxRatioLimit,
+		Seed, UseRectRegion, RadiusX, RadiusY,
+		NumBox, MaxIteration, SmallBoxProb, SmallBoxUseNormalDist, SmallBoxParamA, SmallBoxParamB, SmallBoxRatioLimit,
 		LargeBoxUseNormalDist, LargeBoxParamA, LargeBoxParamB, LargeBoxRatioLimit, LargeBoxRadiusMultiplier
 	);
 	boxes = engine.separateBox(boxes);
@@ -63,7 +64,7 @@ void ATilemapGenerator::GenerateTilemap(
 	auto edges = engine.triangulate(rooms);
 	if (edges.size() == 0)
 		return;
-	auto mst_edges = engine.mst(edges, NumRooms);
+	auto mst_edges = engine.mst(edges);
 	if (mst_edges.size() == 0)
 		return;
 	mst_edges = engine.addSomeEdgesBack(Seed, edges, mst_edges, AddBackProb);

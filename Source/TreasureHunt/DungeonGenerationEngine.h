@@ -58,7 +58,8 @@ public:
     using LineSet = std::set<std::tuple<double, double, double, double>>;
 
     RoomBoxVec randBox(
-        unsigned int seed, unsigned int numBox, unsigned int maxIteration, float smallBoxProb,
+        unsigned int seed, bool useRectRegion, float radiusX, float radiusY,
+        unsigned int numBox, unsigned int maxIteration, float smallBoxProb,
         bool smallBoxUseNormalDist, float smallBoxDistParamA, float smallBoxDistParamB, float smallBoxRatioLimit,
         bool largeBoxUseNormalDist, float largeBoxDistParamA, float largeBoxDistParamB, float largeBoxRatioLimit,
         float largeBoxRadiusMultiplier);
@@ -66,7 +67,7 @@ public:
     RoomBoxVec centerAndCropBox(RoomBoxVec boxes, unsigned int mapWidth, unsigned int mapHeight);
     std::pair<RoomBoxVec, RoomBoxVec> randSelect(RoomBoxVec boxes, unsigned int numRooms, bool allowTouching);
     WeightedEdgeSet triangulate(const RoomBoxVec& rooms);
-    EdgeSet mst(const WeightedEdgeSet& edges, unsigned int numRooms);
+    EdgeSet mst(const WeightedEdgeSet& edges);
     EdgeSet addSomeEdgesBack(
         unsigned int seed,
         const WeightedEdgeSet& edges,

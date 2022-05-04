@@ -176,13 +176,22 @@ constexpr bool DungeonGenerationEngine::CustomTupleComp::operator()(const std::t
 }
 
 
-DungeonGenerationEngine::RoomBoxVec DungeonGenerationEngine::randBox(unsigned int seed,
+DungeonGenerationEngine::RoomBoxVec DungeonGenerationEngine::randBox(
+    unsigned int seed, bool useRectRegion, float radiusX, float radiusY,
     unsigned int numBox, unsigned int maxIteration, float smallBoxProb,
     bool smallBoxUseNormalDist, float smallBoxDistParamA, float smallBoxDistParamB, float smallBoxRatioLimit,
     bool largeBoxUseNormalDist, float largeBoxDistParamA, float largeBoxDistParamB, float largeBoxRatioLimit,
     float largeBoxRadiusMultiplier)
 {
-    int radius = 1;
+    smallBoxDistParamA = std::max(0.0f, smallBoxDistParamA);
+    smallBoxDistParamB = std::max(0.0f, smallBoxDistParamB);
+    largeBoxDistParamA = std::max(0.0f, largeBoxDistParamA);
+    largeBoxDistParamB = std::max(0.0f, largeBoxDistParamB);
+
+    if (!smallBoxUseNormalDist && smallBoxDistParamB < smallBoxDistParamA)
+        return {};
+    if (!largeBoxUseNormalDist && largeBoxDistParamB < largeBoxDistParamA)
+        return {};
 
     std::default_random_engine generator(seed);
     std::uniform_real_distribution<float> pos_dist(0.0f, 1.0f);
@@ -195,17 +204,14 @@ DungeonGenerationEngine::RoomBoxVec DungeonGenerationEngine::randBox(unsigned in
     RoomBoxVec boxes;
     std::set<RoomBox, RoomBoxComp> boxSet;
 
+    radiusX = std::max(1.0f, radiusX);
+    radiusY = std::max(1.0f, radiusY);
+    largeBoxRadiusMultiplier = std::max(0.01f, largeBoxRadiusMultiplier);
+
     int i = 0;
     while (i < (int)numBox && i < (int)maxIteration)
     {
-        double t = 2 * M_PI * pos_dist(generator);
-        double u = pos_dist(generator) + pos_dist(generator);
-        double r = 0.f;
-        if (u > 1.0)
-            r = 2.0f - u;
-        else
-            r = u;
-
+        bool largeBox = false;
         float w = 0, h = 0;
         if (choice_dist(generator) < smallBoxProb)
         {
@@ -240,9 +246,24 @@ DungeonGenerationEngine::RoomBoxVec DungeonGenerationEngine::randBox(unsigned in
             h = std::max(1.f, roundf(h));
             if ((float)w / h > largeBoxRatioLimit || (float)h / w > largeBoxRatioLimit)
                 continue;
-            r *= largeBoxRadiusMultiplier;
+            largeBox = true;
         }
-        RoomBox box(radius * r * std::cos(t), radius * r * std::sin(t), (int)w, (int)h);
+        double cx = 0, cy = 0;
+        if (useRectRegion)
+        {
+            cx = (pos_dist(generator) - 0.5) * 2.0 * radiusX;
+            cy = (pos_dist(generator) - 0.5) * 2.0 * radiusY;
+        }
+        else
+        {
+            double t = 2 * M_PI * pos_dist(generator);
+            double u = std::sqrt(pos_dist(generator));
+            if (largeBox)
+                u *= largeBoxRadiusMultiplier;
+            cx = radiusX * u * std::cos(t);
+            cy = radiusY * u * std::sin(t);
+        }
+        RoomBox box(cx, cy, (int)w, (int)h);
         auto result = boxSet.insert(box);
         if (result.second)
             i++;
@@ -299,6 +320,9 @@ DungeonGenerationEngine::RoomBoxVec DungeonGenerationEngine::separateBox(RoomBox
 
 DungeonGenerationEngine::RoomBoxVec DungeonGenerationEngine::centerAndCropBox(RoomBoxVec boxes, unsigned int mapWidth, unsigned int mapHeight)
 {
+    if (boxes.size() == 0)
+        return boxes;
+
     double centerX = 0.0, centerY = 0.0;
     for (auto& box : boxes)
     {
@@ -356,26 +380,43 @@ DungeonGenerationEngine::WeightedEdgeSet DungeonGenerationEngine::triangulate(co
         coords.push_back(room.cy);
     }
 
-    delaunator::Delaunator d(coords);
-    for (std::size_t i = 0; i < d.triangles.size(); i += 3)
+    if (rooms.size() == 2)
     {
-        edges.insert({ d.triangles[i], d.triangles[i + 1], rooms[d.triangles[i]].getHamiltonDist(rooms[d.triangles[i + 1]]) });
-        edges.insert({ d.triangles[i + 1], d.triangles[i + 2], rooms[d.triangles[i + 1]].getHamiltonDist(rooms[d.triangles[i + 2]]) });
-        edges.insert({ d.triangles[i + 2], d.triangles[i], rooms[d.triangles[i + 2]].getHamiltonDist(rooms[d.triangles[i]]) });
+        edges.insert({ 0, 1, rooms[0].getHamiltonDist(rooms[1]) });
+        edges.insert({ 1, 0, rooms[0].getHamiltonDist(rooms[1]) });
+    }
+    else if (rooms.size() > 2)
+    {
+        delaunator::Delaunator d(coords);
+        for (std::size_t i = 0; i < d.triangles.size(); i += 3)
+        {
+            edges.insert({ d.triangles[i], d.triangles[i + 1], rooms[d.triangles[i]].getHamiltonDist(rooms[d.triangles[i + 1]]) });
+            edges.insert({ d.triangles[i + 1], d.triangles[i + 2], rooms[d.triangles[i + 1]].getHamiltonDist(rooms[d.triangles[i + 2]]) });
+            edges.insert({ d.triangles[i + 2], d.triangles[i], rooms[d.triangles[i + 2]].getHamiltonDist(rooms[d.triangles[i]]) });
 
-        edges.insert({ d.triangles[i + 1], d.triangles[i], rooms[d.triangles[i]].getHamiltonDist(rooms[d.triangles[i + 1]]) });
-        edges.insert({ d.triangles[i + 2], d.triangles[i + 1], rooms[d.triangles[i + 1]].getHamiltonDist(rooms[d.triangles[i + 2]]) });
-        edges.insert({ d.triangles[i], d.triangles[i + 2], rooms[d.triangles[i + 2]].getHamiltonDist(rooms[d.triangles[i]]) });
+            edges.insert({ d.triangles[i + 1], d.triangles[i], rooms[d.triangles[i]].getHamiltonDist(rooms[d.triangles[i + 1]]) });
+            edges.insert({ d.triangles[i + 2], d.triangles[i + 1], rooms[d.triangles[i + 1]].getHamiltonDist(rooms[d.triangles[i + 2]]) });
+            edges.insert({ d.triangles[i], d.triangles[i + 2], rooms[d.triangles[i + 2]].getHamiltonDist(rooms[d.triangles[i]]) });
+        }
     }
     return edges;
 }
 
-DungeonGenerationEngine::EdgeSet DungeonGenerationEngine::mst(
-    const WeightedEdgeSet& edges,
-    unsigned int numRooms)
+DungeonGenerationEngine::EdgeSet DungeonGenerationEngine::mst(const WeightedEdgeSet& edges)
 {
     using iPair = std::pair<int, double>;
 
+    if (edges.size() == 0)
+        return {};
+
+    std::set<int> nodes;
+    for (const auto& e : edges)
+    {
+        nodes.insert(std::get<0>(e));
+        nodes.insert(std::get<1>(e));
+    }
+
+    unsigned int numRooms = nodes.size();
     std::set<std::pair<int, int>> mst_edges;
     std::vector<std::vector<iPair>> adj;
     adj.resize(numRooms);
@@ -465,12 +506,12 @@ DungeonGenerationEngine::LineSet DungeonGenerationEngine::lineConnect(
         const RoomBox& b = rooms[e.second];
         if (abs(a.cx - b.cx) <= a.w / 2.0 + b.w / 2.0 - overlapPadding)
         {
-            auto centerx = (a.cx + b.cx) / 2.0;
+            auto centerx = (std::max(a.x, b.x) + std::min(a.x + a.w, b.x + b.w)) / 2;
             lines.insert({ centerx, a.cy, centerx, b.cy });
         }
         else if (abs(a.cy - b.cy) <= a.h / 2.0 + b.h / 2.0 - overlapPadding)
         {
-            auto centery = (a.cy + b.cy) / 2.0;
+            auto centery = (std::max(a.y, b.y) + std::min(a.y + a.h, b.y + b.h)) / 2;
             lines.insert({ a.cx, centery, b.cx, centery });
         }
         else
