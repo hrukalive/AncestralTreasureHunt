@@ -1,4 +1,7 @@
 ﻿,NPC_ID,Conversation_ID,Line_ID,Dialogue
-1,1,1,1,Welcome to the tutorial!
-2,1,1,2,Press 'Tab' to open/close the menu
-3,1,1,3,You can discover the your character's detail by clicking the buttons at bottom left.
+1,1,1,1,Welcome to the Ancestral Treasure Hunt tutorial!
+2,1,1,2,The goal is to reach the blue checkpoint and go deeper into the dungeon.
+3,1,1,3,"If you fail, however, your descendent will continue the journey."
+4,1,1,4,Choose the stats then to continue the journey.
+5,1,1,5,Press 'Tab' to open/close the menu.
+6,1,1,6,You can discover the your character's detail by clicking the buttons at the bottom left.
